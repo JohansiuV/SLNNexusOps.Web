@@ -1,0 +1,182 @@
+@page "{id:int}"
+@model DetalleModel
+@{
+    var a = Model.Detalle.Activo;
+    var baja = a.Estado == EstadosActivo.DadoDeBaja;
+    ViewData["Title"] = $"Activo {a.Codigo}";
+    ViewData["Migas"] = new List<Miga> { new("Activos", "/Activos"), new(a.Codigo) };
+}
+
+<div class="page-header">
+    <div>
+        <h1><span class="text-mono">@a.Codigo</span> <span class="badge fs-6 @UiHelper.ClaseEstado(a.Estado)">@a.Estado</span></h1>
+        <p class="subtitulo">@a.Nombre</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (!baja)
+        {
+            <a asp-page="/Incidencias/Form" asp-route-idActivo="@a.IdActivo" class="btn btn-outline-danger"><i class="bi bi-ticket-perforated"></i> Reportar incidencia</a>
+        }
+        @if (Model.EsAdminOSupervisor && !baja)
+        {
+            <a asp-page="/Mantenimientos/Form" asp-route-idActivo="@a.IdActivo" class="btn btn-outline-primary"><i class="bi bi-tools"></i> Programar mantenimiento</a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalCambioEstado"><i class="bi bi-arrow-repeat"></i> Cambiar estado</button>
+            <a asp-page="Form" asp-route-id="@a.IdActivo" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+        }
+    </div>
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card">
+    <h5><i class="bi bi-card-list text-primary"></i> Ficha del activo</h5>
+    <dl class="nx-ficha">
+        <div><dt>Código</dt><dd class="text-mono">@a.Codigo</dd></div>
+        <div><dt>Nombre</dt><dd>@a.Nombre</dd></div>
+        <div><dt>Tipo</dt><dd>@a.TipoActivo</dd></div>
+        <div><dt>Marca</dt><dd>@(a.Marca ?? "-")</dd></div>
+        <div><dt>Modelo</dt><dd>@(a.Modelo ?? "-")</dd></div>
+        <div><dt>Número de serie</dt><dd class="text-mono">@(a.NumeroSerie ?? "-")</dd></div>
+        <div><dt>Área</dt><dd>@a.Area</dd></div>
+        <div><dt>Fecha de adquisición</dt><dd>@UiHelper.Fecha(a.FechaAdquisicion)</dd></div>
+        <div><dt>Valor de adquisición</dt><dd>@UiHelper.Moneda(a.ValorAdquisicion)</dd></div>
+        <div><dt>Registrado</dt><dd>@UiHelper.FechaHora(a.FechaRegistro)</dd></div>
+        <div class="completo"><dt>Observaciones</dt><dd>@(string.IsNullOrWhiteSpace(a.Observaciones) ? "-" : a.Observaciones)</dd></div>
+    </dl>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="nx-card h-100">
+            <h5><i class="bi bi-clock-history text-primary"></i> Historial</h5>
+            @if (Model.Detalle.Historial.Count == 0)
+            {
+                <p class="text-muted mb-0">Sin movimientos registrados.</p>
+            }
+            else
+            {
+                <ul class="nx-timeline">
+                    @foreach (var h in Model.Detalle.Historial)
+                    {
+                        <li>
+                            <div class="entidad">@h.Entidad</div>
+                            <div>
+                                @if (!string.IsNullOrEmpty(h.EstadoAnterior))
+                                {
+                                    <span class="badge @UiHelper.ClaseEstado(h.EstadoAnterior)">@h.EstadoAnterior</span>
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                }
+                                <span class="badge @UiHelper.ClaseEstado(h.EstadoNuevo)">@h.EstadoNuevo</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(h.Comentario)) { <div class="small mt-1">@h.Comentario</div> }
+                            <div class="fecha">@UiHelper.FechaHora(h.Fecha)@(h.Usuario != null ? " · " + h.Usuario : "")</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="nx-card">
+            <h5><i class="bi bi-ticket-perforated text-danger"></i> Incidencias recientes</h5>
+            @if (Model.Detalle.Incidencias.Count == 0)
+            {
+                <p class="text-muted mb-0">Este activo no tiene incidencias.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-nx table-sm">
+                        <thead><tr><th>Código</th><th>Título</th><th>Prioridad</th><th>Estado</th><th>Fecha</th></tr></thead>
+                        <tbody>
+                            @foreach (var i in Model.Detalle.Incidencias)
+                            {
+                                <tr>
+                                    <td><a asp-page="/Incidencias/Detalle" asp-route-id="@i.IdIncidencia">@i.Codigo</a></td>
+                                    <td>@i.Titulo</td>
+                                    <td><span class="badge @UiHelper.ClasePrioridad(i.Prioridad)">@UiHelper.Texto(i.Prioridad)</span></td>
+                                    <td><span class="badge @UiHelper.ClaseEstado(i.Estado)">@i.Estado</span></td>
+                                    <td>@UiHelper.Fecha(i.FechaRegistro)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="nx-card">
+            <h5><i class="bi bi-tools text-primary"></i> Mantenimientos recientes</h5>
+            @if (Model.Detalle.Mantenimientos.Count == 0)
+            {
+                <p class="text-muted mb-0">Este activo no tiene mantenimientos.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-nx table-sm">
+                        <thead><tr><th>Código</th><th>Tipo</th><th>Programado</th><th>Estado</th><th class="text-end">Costo total</th></tr></thead>
+                        <tbody>
+                            @foreach (var m in Model.Detalle.Mantenimientos)
+                            {
+                                <tr>
+                                    <td><a asp-page="/Mantenimientos/Detalle" asp-route-id="@m.IdMantenimiento">@m.Codigo</a></td>
+                                    <td>@m.TipoMantenimiento</td>
+                                    <td>@UiHelper.Fecha(m.FechaProgramada)</td>
+                                    <td><span class="badge @UiHelper.ClaseEstado(m.Estado)">@m.Estado</span></td>
+                                    <td class="text-end">@UiHelper.Moneda(m.CostoTotal)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.EsAdminOSupervisor && !baja)
+{
+    <div class="modal fade" id="modalCambioEstado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post" asp-page-handler="Estado" asp-route-id="@a.IdActivo" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambiar estado del activo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nuevo estado</label>
+                        <select name="estado" class="form-select" required>
+                            @foreach (var e in EstadosActivo.Todos.Where(x => x != a.Estado && (x != EstadosActivo.DadoDeBaja)))
+                            {
+                                <option value="@e">@e</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Motivo (opcional)</label>
+                        <textarea name="comentario" class="form-control" rows="3" maxlength="500"></textarea>
+                    </div>
+                    <p class="small text-muted mt-3 mb-0">El cambio quedará registrado en el historial del activo.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Cambiar estado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (Model.EsAdministrador && !baja)
+{
+    <form method="post" asp-page-handler="Baja" asp-route-id="@a.IdActivo" class="mt-2">
+        <button type="submit" class="btn btn-outline-danger btn-sm"
+                data-confirm="¿Desea dar de baja el activo @a.Codigo? Esta acción no se puede revertir."
+                data-confirm-ok="Dar de baja" data-confirm-clase="btn-danger">
+            <i class="bi bi-archive"></i> Dar de baja este activo
+        </button>
+    </form>
+}

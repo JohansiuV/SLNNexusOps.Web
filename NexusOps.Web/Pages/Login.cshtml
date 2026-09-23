@@ -1,0 +1,67 @@
+@page
+@model LoginModel
+@inject IWebHostEnvironment Entorno
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = "_LayoutLogin";
+}
+
+<div class="login-wrapper">
+    <div class="login-hero d-none d-lg-flex">
+        <div>
+            <span class="login-logo"><i class="bi bi-hexagon-fill"></i></span>
+            <h1>NEXUS OPS</h1>
+            <p>Plataforma inteligente de gestión operativa empresarial</p>
+            <ul>
+                <li><i class="bi bi-check2-circle"></i> Activos, incidencias y mantenimientos</li>
+                <li><i class="bi bi-check2-circle"></i> Alertas y dashboard en tiempo real</li>
+                <li><i class="bi bi-check2-circle"></i> Historial y reportes de costos</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="login-panel">
+        <div class="login-card">
+            <h2>Iniciar sesión</h2>
+            <p class="text-muted">Ingrese sus credenciales para continuar.</p>
+
+            @if (Model.Expirada)
+            {
+                <div class="alert alert-warning"><i class="bi bi-clock-history me-1"></i> Su sesión expiró. Vuelva a iniciar sesión.</div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.MensajeError))
+            {
+                <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> @Model.MensajeError</div>
+            }
+
+            <form method="post">
+                <div class="mb-3">
+                    <label asp-for="Login.NombreUsuario" class="form-label">Usuario</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input asp-for="Login.NombreUsuario" class="form-control" autofocus autocomplete="username" />
+                    </div>
+                    <span asp-validation-for="Login.NombreUsuario" class="text-danger small"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Login.Password" class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input asp-for="Login.Password" type="password" class="form-control" autocomplete="current-password" />
+                    </div>
+                    <span asp-validation-for="Login.Password" class="text-danger small"></span>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Ingresar <i class="bi bi-arrow-right ms-1"></i></button>
+            </form>
+
+            @if (Entorno.IsDevelopment())
+            {
+                <div class="login-demo">
+                    <strong>Usuarios de prueba (solo desarrollo)</strong>
+                    <span>admin / admin123 &middot; supervisor / super123 &middot; tecnico1 / tecnico123</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

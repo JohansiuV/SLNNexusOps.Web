@@ -1,0 +1,46 @@
+@model PaginacionInfo
+@{
+    var inicio = Math.Max(1, Model.Pagina - 2);
+    var fin = Math.Min(Model.TotalPaginas, Model.Pagina + 2);
+    var desde = Model.Total == 0 ? 0 : (Model.Pagina - 1) * Model.Tamano + 1;
+    var hasta = Math.Min(Model.Pagina * Model.Tamano, Model.Total);
+}
+<div class="nx-paginacion">
+    <small class="text-muted">Mostrando @desde - @hasta de @Model.Total registros</small>
+
+    @if (Model.TotalPaginas > 1)
+    {
+        <nav aria-label="Paginación">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.Pagina <= 1 ? "disabled" : "")">
+                    <a class="page-link" href="@UiHelper.UrlPagina(Context.Request, Model.Pagina - 1)">&laquo;</a>
+                </li>
+                @if (inicio > 1)
+                {
+                    <li class="page-item"><a class="page-link" href="@UiHelper.UrlPagina(Context.Request, 1)">1</a></li>
+                    @if (inicio > 2)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                }
+                @for (var p = inicio; p <= fin; p++)
+                {
+                    <li class="page-item @(p == Model.Pagina ? "active" : "")">
+                        <a class="page-link" href="@UiHelper.UrlPagina(Context.Request, p)">@p</a>
+                    </li>
+                }
+                @if (fin < Model.TotalPaginas)
+                {
+                    @if (fin < Model.TotalPaginas - 1)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                    <li class="page-item"><a class="page-link" href="@UiHelper.UrlPagina(Context.Request, Model.TotalPaginas)">@Model.TotalPaginas</a></li>
+                }
+                <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : "")">
+                    <a class="page-link" href="@UiHelper.UrlPagina(Context.Request, Model.Pagina + 1)">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

@@ -1,0 +1,168 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Migas"] = new List<Miga> { new("Dashboard") };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="page-header">
+    <div>
+        <h1>Dashboard</h1>
+        <p class="subtitulo">Indicadores operativos en tiempo real</p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        @if (Model.Resumen != null)
+        {
+            <span class="dash-actualizado">Actualizado: @UiHelper.FechaHora(Model.Resumen.GeneradoEn)</span>
+        }
+        <a asp-page="/Dashboard/Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-clockwise"></i> Actualizar</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.MensajeError))
+{
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> @Model.MensajeError</div>
+}
+else if (Model.Resumen != null)
+{
+    var r = Model.Resumen;
+    var t = r.Tarjetas;
+
+    <div class="dash-grid">
+        <a class="kpi azul" href="/Activos">
+            <span class="kpi-icono"><i class="bi bi-pc-display"></i></span>
+            <span><span class="kpi-valor">@t.TotalActivos</span><br /><span class="kpi-titulo">Total activos</span></span>
+        </a>
+        <a class="kpi verde" href="/Activos?estado=Operativo">
+            <span class="kpi-icono"><i class="bi bi-check-circle"></i></span>
+            <span><span class="kpi-valor">@t.Operativos</span><br /><span class="kpi-titulo">Operativos</span></span>
+        </a>
+        <a class="kpi ambar" href="/Activos?estado=En mantenimiento">
+            <span class="kpi-icono"><i class="bi bi-tools"></i></span>
+            <span><span class="kpi-valor">@t.EnMantenimiento</span><br /><span class="kpi-titulo">En mantenimiento</span></span>
+        </a>
+        <a class="kpi rojo" href="/Incidencias?soloAbiertas=true">
+            <span class="kpi-icono"><i class="bi bi-ticket-perforated"></i></span>
+            <span><span class="kpi-valor">@t.Incidencias</span><br /><span class="kpi-titulo">Incidencias abiertas</span></span>
+        </a>
+        <a class="kpi violeta" href="/Tareas">
+            <span class="kpi-icono"><i class="bi bi-check2-square"></i></span>
+            <span><span class="kpi-valor">@t.TareasPendientes</span><br /><span class="kpi-titulo">Tareas pendientes</span></span>
+        </a>
+        <a class="kpi cyan" href="/Mantenimientos?estado=Programado">
+            <span class="kpi-icono"><i class="bi bi-calendar-check"></i></span>
+            <span><span class="kpi-valor">@t.Mantenimientos</span><br /><span class="kpi-titulo">Mantenimientos</span></span>
+        </a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-5">
+            <div class="nx-card chart-card">
+                <h5><i class="bi bi-lightbulb text-warning"></i> Dashboard inteligente</h5>
+                @foreach (var i in r.Indicadores)
+                {
+                    var clase = UiHelper.ClaseNivelAlerta(i.Nivel);
+                    if (!string.IsNullOrEmpty(i.Enlace))
+                    {
+                        <a class="indicador @clase" href="@i.Enlace">
+                            <span>@UiHelper.EmojiNivel(i.Nivel)</span><span>@i.Mensaje</span>
+                            <i class="bi bi-chevron-right ms-auto"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="indicador @clase"><span>@UiHelper.EmojiNivel(i.Nivel)</span><span>@i.Mensaje</span></div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="nx-card chart-card">
+                <h5><i class="bi bi-calendar-event text-primary"></i> Mantenimientos pendientes</h5>
+                @if (r.ProximosMantenimientos.Count == 0)
+                {
+                    <div class="dash-vacio">No hay mantenimientos pendientes.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-nx table-sm">
+                            <thead><tr><th>Código</th><th>Activo</th><th>Técnico</th><th>Fecha</th><th>Situación</th></tr></thead>
+                            <tbody>
+                                @foreach (var m in r.ProximosMantenimientos)
+                                {
+                                    <tr>
+                                        <td><a asp-page="/Mantenimientos/Detalle" asp-route-id="@m.IdMantenimiento">@m.Codigo</a></td>
+                                        <td>@m.Activo</td>
+                                        <td>@m.Tecnico</td>
+                                        <td>@UiHelper.Fecha(m.FechaProgramada)</td>
+                                        <td>
+                                            @switch (m.Situacion)
+                                            {
+                                                case "Vencido": <span class="badge text-bg-danger">Vencido</span> break;
+                                                case "Próximo": <span class="badge text-bg-warning">Próximo (@m.DiasRestantes d)</span> break;
+                                                case "En proceso": <span class="badge text-bg-primary">En proceso</span> break;
+                                                default: <span class="badge text-bg-info">Programado</span> break;
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="nx-card chart-card"><h5>Incidencias por prioridad</h5><div class="chart-caja"><canvas id="chartPrioridad"></canvas></div></div></div>
+        <div class="col-md-4"><div class="nx-card chart-card"><h5>Activos por estado</h5><div class="chart-caja"><canvas id="chartActivos"></canvas></div></div></div>
+        <div class="col-md-4"><div class="nx-card chart-card"><h5>Tareas por estado</h5><div class="chart-caja"><canvas id="chartTareas"></canvas></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6"><div class="nx-card chart-card"><h5>Incidencias por área</h5><div class="chart-caja"><canvas id="chartAreas"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="nx-card chart-card"><h5>Mantenimientos por mes</h5><div class="chart-caja"><canvas id="chartMantenimientos"></canvas></div></div></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8"><div class="nx-card chart-card"><h5>Costos de mantenimiento (últimos 12 meses)</h5><div class="chart-caja"><canvas id="chartCostos"></canvas></div></div></div>
+        <div class="col-lg-4">
+            <div class="nx-card chart-card p-0">
+                <h5 class="px-3 pt-3 mb-2"><i class="bi bi-bell text-danger"></i> Alertas recientes</h5>
+                @if (r.AlertasRecientes.Count == 0)
+                {
+                    <div class="dash-vacio">Sin alertas pendientes.</div>
+                }
+                else
+                {
+                    foreach (var a in r.AlertasRecientes)
+                    {
+                        var enlace = UiHelper.EnlaceAlerta(a);
+                        <div class="nx-alerta-item">
+                            <i class="bi @UiHelper.IconoNivel(a.Nivel) icono @UiHelper.ClaseNivelAlerta(a.Nivel)"></i>
+                            <div class="texto">
+                                <div>@a.Mensaje</div>
+                                <small class="text-muted">@UiHelper.FechaHora(a.FechaRegistro)</small>
+                            </div>
+                            @if (enlace != null) { <a href="@enlace" class="btn btn-sm btn-light"><i class="bi bi-arrow-right"></i></a> }
+                        </div>
+                    }
+                    <div class="p-3 text-end"><a asp-page="/Alertas/Index" class="btn btn-sm btn-outline-primary">Ver todas</a></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <script id="dashData" type="application/json">@Html.Raw(Model.DatosJson)</script>
+}
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,76 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Usuarios";
+    ViewData["Migas"] = new List<Miga> { new("Administración"), new("Usuarios") };
+}
+
+<div class="page-header">
+    <div>
+        <h1>Usuarios</h1>
+        <p class="subtitulo">Cuentas de acceso al sistema y su rol</p>
+    </div>
+    <a asp-page="Form" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo usuario</a>
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-filtros">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label">Buscar</label>
+            <input type="search" name="buscar" value="@Model.Buscar" class="form-control form-control-sm" placeholder="Usuario o nombre..." />
+        </div>
+        <div class="col-lg-3 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idRol", "Rol", Model.IdRol?.ToString(), Model.Roles))</div>
+        <div class="col-lg-3 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("activo", "Estado", Model.Activo, Model.EstadosActivo))</div>
+        <div class="col-auto d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Buscar</button>
+            <a asp-page="Index" class="btn btn-light btn-sm">Limpiar</a>
+        </div>
+    </form>
+</div>
+
+<div class="nx-card sin-padding">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="nx-vacio"><i class="bi bi-people"></i><p class="mt-2 mb-0">No se encontraron registros.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var x in Model.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold text-mono">@x.NombreUsuario</td>
+                            <td>@x.NombreCompleto</td>
+                            <td>@x.Area</td>
+                            <td><span class="badge text-bg-primary">@x.Rol</span></td>
+                            <td>@if (x.Activo) { <span class="badge text-bg-success">Activo</span> } else { <span class="badge text-bg-secondary">Inactivo</span> }</td>
+                            <td>@UiHelper.FechaHora(x.UltimoAcceso)</td>
+                            <td class="acciones">
+                                <a asp-page="Form" asp-route-id="@x.IdUsuario" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                @if (x.Activo && x.IdUsuario != Model.IdUsuarioActual)
+                                {
+                                    <form method="post" asp-page-handler="Toggle" asp-route-id="@x.IdUsuario">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Desactivar"
+                                                data-confirm="¿Desea desactivar al usuario @x.NombreUsuario? No podrá iniciar sesión."
+                                                data-confirm-ok="Desactivar" data-confirm-clase="btn-danger">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Pag != null)
+        {
+            @await Html.PartialAsync("_Paginacion", Model.Pag)
+        }
+    }
+</div>

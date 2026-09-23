@@ -1,0 +1,40 @@
+@model ModalEstadoInfo
+@* Modal de cambio de estado: lo abren los botones con data-bs-target="#modalEstado" (ver site.js). *@
+<div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" asp-page-handler="@Model.Handler" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEstadoTitulo">Cambiar estado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" id="modalEstadoId" />
+                <input type="hidden" name="estado" id="modalEstadoValor" />
+                <p id="modalEstadoTexto" class="mb-3"></p>
+
+                @if (Model.Usuarios != null)
+                {
+                    <div id="modalEstadoAsignar" class="mb-3 d-none">
+                        <label class="form-label fw-semibold">Responsable</label>
+                        <select name="idUsuarioAsignado" id="modalEstadoUsuario" class="form-select">
+                            <option value="">-- Seleccione --</option>
+                            @foreach (var u in Model.Usuarios)
+                            {
+                                <option value="@u.Value">@u.Text</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div>
+                    <label class="form-label fw-semibold" id="modalEstadoEtiqueta">Comentario (opcional)</label>
+                    <textarea name="comentario" id="modalEstadoComentario" class="form-control" rows="3" maxlength="500"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="modalEstadoOk">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>

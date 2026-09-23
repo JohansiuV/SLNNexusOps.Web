@@ -1,0 +1,79 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Mantenimientos";
+    ViewData["Migas"] = new List<Miga> { new("Mantenimientos") };
+    var hoy = DateTime.Today;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Mantenimientos</h1>
+        <p class="subtitulo">@(Model.EsTecnico ? "Mantenimientos asignados a usted" : "Programación y seguimiento de mantenimientos preventivos y correctivos")</p>
+    </div>
+    @if (Model.EsAdminOSupervisor)
+    {
+        <a asp-page="Form" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Programar mantenimiento</a>
+    }
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-filtros">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">Buscar</label>
+            <input type="search" name="buscar" value="@Model.Buscar" class="form-control form-control-sm" placeholder="Código, activo o descripción..." />
+        </div>
+        <div class="col-lg-2 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("tipo", "Tipo", Model.Tipo, Model.Tipos))</div>
+        <div class="col-lg-2 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("estado", "Estado", Model.Estado, Model.Estados))</div>
+        @if (Model.EsAdminOSupervisor)
+        {
+            <div class="col-lg-3 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idTecnico", "Técnico", Model.IdTecnico?.ToString(), Model.Tecnicos))</div>
+        }
+        <div class="col-lg-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Buscar</button>
+            <a asp-page="Index" class="btn btn-light btn-sm">Limpiar</a>
+        </div>
+    </form>
+</div>
+
+<div class="nx-card sin-padding">
+    @if (Model.Resultado.Items.Count == 0)
+    {
+        <div class="nx-vacio"><i class="bi bi-tools"></i><p class="mt-2 mb-0">No se encontraron mantenimientos.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead>
+                    <tr><th>Código</th><th>Activo</th><th>Tipo</th><th>Técnico</th><th>Programado</th><th>Estado</th><th class="text-end">Costo total</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Resultado.Items)
+                    {
+                        var vencido = m.Estado == EstadosMantenimiento.Programado && m.FechaProgramada.Date < hoy;
+                        <tr class="@(vencido ? "fila-alerta" : "")">
+                            <td><a asp-page="Detalle" asp-route-id="@m.IdMantenimiento" class="fw-semibold text-mono">@m.Codigo</a></td>
+                            <td><span class="text-mono">@m.ActivoCodigo</span><br /><small class="text-muted">@m.ActivoNombre</small></td>
+                            <td>@m.TipoMantenimiento</td>
+                            <td>@m.Tecnico</td>
+                            <td class="@(vencido ? "text-danger fw-semibold" : "")">@UiHelper.Fecha(m.FechaProgramada)@if (vencido) { <br /><small>Vencido</small> }</td>
+                            <td><span class="badge @UiHelper.ClaseEstado(m.Estado)">@m.Estado</span></td>
+                            <td class="text-end">@UiHelper.Moneda(m.CostoTotal)</td>
+                            <td class="acciones">
+                                <a asp-page="Detalle" asp-route-id="@m.IdMantenimiento" class="btn btn-sm btn-outline-primary" title="Ver detalle"><i class="bi bi-eye"></i></a>
+                                @if (m.Estado == EstadosMantenimiento.Programado || m.Estado == EstadosMantenimiento.EnProceso)
+                                {
+                                    <a asp-page="Form" asp-route-id="@m.IdMantenimiento" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_Paginacion", new PaginacionInfo(Model.Resultado.Pagina, Model.Resultado.TotalPaginas, Model.Resultado.Total, Model.Resultado.Tamano))
+    }
+</div>

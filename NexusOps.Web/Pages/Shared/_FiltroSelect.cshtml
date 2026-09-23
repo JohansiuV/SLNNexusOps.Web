@@ -1,0 +1,9 @@
+@model FiltroSelectInfo
+<label class="form-label">@Model.Etiqueta</label>
+<select name="@Model.Nombre" class="form-select form-select-sm">
+    <option value="">Todos</option>
+    @foreach (var item in Model.Items)
+    {
+        <option value="@item.Value" selected="@(item.Value == Model.Valor)">@item.Text</option>
+    }
+</select>

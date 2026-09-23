@@ -1,0 +1,21 @@
+@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = "_LayoutLogin";
+}
+
+<div class="login-wrapper">
+    <div class="login-panel w-100">
+        <div class="login-card text-center">
+            <i class="bi bi-bug fs-1 text-danger"></i>
+            <h2>Ocurrió un error</h2>
+            <p class="text-muted">No pudimos completar la solicitud. Intente nuevamente en unos instantes.</p>
+            @if (!string.IsNullOrEmpty(Model.RequestId))
+            {
+                <p class="small text-muted">Código de solicitud: <code>@Model.RequestId</code></p>
+            }
+            <a href="/" class="btn btn-primary">Volver al inicio</a>
+        </div>
+    </div>
+</div>

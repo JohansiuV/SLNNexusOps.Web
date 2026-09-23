@@ -1,0 +1,57 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? "Editar usuario" : "Nuevo usuario";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Administración"), new("Usuarios", "/Usuarios"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.NombreUsuario" class="form-label">Nombre de usuario</label>
+                <input asp-for="Input.NombreUsuario" class="form-control" />
+                <span asp-validation-for="Input.NombreUsuario" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.IdRol" class="form-label">Rol</label>
+                <select asp-for="Input.IdRol" asp-items="Model.Roles" class="form-select"><option value="0">-- Seleccione --</option></select>
+                <span asp-validation-for="Input.IdRol" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.IdPersonal" class="form-label">Personal asociado</label>
+                <select asp-for="Input.IdPersonal" asp-items="Model.Personal" class="form-select"><option value="0">-- Seleccione --</option></select>
+                <span asp-validation-for="Input.IdPersonal" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Password" class="form-label">Contraseña</label>
+                @if (Model.EsEdicion) { <input asp-for="Input.Password" type="password" class="form-control" autocomplete="new-password" /> }
+                else { <input asp-for="Input.Password" type="password" class="form-control" autocomplete="new-password" required /> }
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                <div class="form-text">@(Model.EsEdicion ? "Déjela vacía para conservar la contraseña actual." : "Mínimo 6 caracteres.")</div>
+            </div>
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    <input asp-for="Input.Activo" class="form-check-input" role="switch" />
+                    <label asp-for="Input.Activo" class="form-check-label">Usuario activo</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="Index" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios?" : "¿Desea registrar este usuario?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Registrar")">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+        </div>
+    </form>
+</div>

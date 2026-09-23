@@ -1,0 +1,70 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? "Editar personal" : "Nuevo personal";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Administración"), new("Personal", "/Personal"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.IdArea" class="form-label">Área</label>
+                <select asp-for="Input.IdArea" asp-items="Model.Areas" class="form-select"><option value="0">-- Seleccione --</option></select>
+                <span asp-validation-for="Input.IdArea" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Documento" class="form-label">Documento de identidad</label>
+                <input asp-for="Input.Documento" class="form-control" />
+                <span asp-validation-for="Input.Documento" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Nombres" class="form-label">Nombres</label>
+                <input asp-for="Input.Nombres" class="form-control" />
+                <span asp-validation-for="Input.Nombres" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Apellidos" class="form-label">Apellidos</label>
+                <input asp-for="Input.Apellidos" class="form-control" />
+                <span asp-validation-for="Input.Apellidos" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Correo" class="form-label">Correo electrónico</label>
+                <input asp-for="Input.Correo" type="email" class="form-control" />
+                <span asp-validation-for="Input.Correo" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Telefono" class="form-label">Teléfono</label>
+                <input asp-for="Input.Telefono" class="form-control" />
+                <span asp-validation-for="Input.Telefono" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Cargo" class="form-label">Cargo</label>
+                <input asp-for="Input.Cargo" class="form-control" />
+                <span asp-validation-for="Input.Cargo" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input asp-for="Input.Activo" class="form-check-input" role="switch" />
+                    <label asp-for="Input.Activo" class="form-check-label">Personal activo</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="Index" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios?" : "¿Desea registrar este personal?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Registrar")">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+        </div>
+    </form>
+</div>

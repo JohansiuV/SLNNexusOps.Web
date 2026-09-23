@@ -1,0 +1,89 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? "Editar activo" : "Nuevo activo";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Activos", "/Activos"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Codigo" class="form-label">Código</label>
+                <input asp-for="Input.Codigo" class="form-control text-uppercase" placeholder="LAP-0001" />
+                <span asp-validation-for="Input.Codigo" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.Nombre" class="form-label">Nombre</label>
+                <input asp-for="Input.Nombre" class="form-control" />
+                <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.IdTipoActivo" class="form-label">Tipo de activo</label>
+                <select asp-for="Input.IdTipoActivo" asp-items="Model.Tipos" class="form-select"><option value="0">-- Seleccione --</option></select>
+                <span asp-validation-for="Input.IdTipoActivo" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.IdArea" class="form-label">Área</label>
+                <select asp-for="Input.IdArea" asp-items="Model.Areas" class="form-select"><option value="0">-- Seleccione --</option></select>
+                <span asp-validation-for="Input.IdArea" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Marca" class="form-label">Marca</label>
+                <input asp-for="Input.Marca" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Modelo" class="form-label">Modelo</label>
+                <input asp-for="Input.Modelo" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.NumeroSerie" class="form-label">Número de serie</label>
+                <input asp-for="Input.NumeroSerie" class="form-control" />
+                <span asp-validation-for="Input.NumeroSerie" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.FechaAdquisicion" class="form-label">Fecha de adquisición</label>
+                <input asp-for="Input.FechaAdquisicion" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                <span asp-validation-for="Input.FechaAdquisicion" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.ValorAdquisicion" class="form-label">Valor de adquisición (S/)</label>
+                <input asp-for="Input.ValorAdquisicion" type="number" step="0.01" min="0" class="form-control" />
+                <span asp-validation-for="Input.ValorAdquisicion" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Estado" class="form-label">Estado</label>
+                <select asp-for="Input.Estado" asp-items="Model.Estados" class="form-select"></select>
+                <span asp-validation-for="Input.Estado" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Observaciones" class="form-label">Observaciones</label>
+                <textarea asp-for="Input.Observaciones" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Input.Observaciones" class="text-danger"></span>
+            </div>
+            @if (Model.EsEdicion)
+            {
+                <div class="col-12">
+                    <label asp-for="Input.Comentario" class="form-label">Motivo del cambio de estado (opcional)</label>
+                    <input asp-for="Input.Comentario" class="form-control" placeholder="Solo se registra en el historial si cambia el estado" />
+                </div>
+            }
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="@(Model.EsEdicion ? "Detalle" : "Index")" asp-route-id="@Model.Id" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios del activo?" : "¿Desea registrar este activo?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Registrar")">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+        </div>
+    </form>
+</div>

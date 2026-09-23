@@ -1,0 +1,61 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? "Editar repuesto" : "Nuevo repuesto";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Repuestos", "/Repuestos"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="Input.Nombre" class="form-label">Nombre</label>
+                <input asp-for="Input.Nombre" class="form-control" />
+                <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Descripcion" class="form-label">Descripción</label>
+                <textarea asp-for="Input.Descripcion" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Stock" class="form-label">Stock actual</label>
+                <input asp-for="Input.Stock" type="number" min="0" step="1" class="form-control" />
+                <span asp-validation-for="Input.Stock" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.StockMinimo" class="form-label">Stock mínimo</label>
+                <input asp-for="Input.StockMinimo" type="number" min="0" step="1" class="form-control" />
+                <span asp-validation-for="Input.StockMinimo" class="text-danger"></span>
+                <div class="form-text">Al llegar a este valor se genera una alerta.</div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Precio" class="form-label">Precio unitario (S/)</label>
+                <input asp-for="Input.Precio" type="number" min="0" step="0.01" class="form-control" />
+                <span asp-validation-for="Input.Precio" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    <input asp-for="Input.Activo" class="form-check-input" role="switch" />
+                    <label asp-for="Input.Activo" class="form-check-label">Repuesto activo</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="Index" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios?" : "¿Desea registrar este repuesto?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Registrar")">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+        </div>
+    </form>
+</div>

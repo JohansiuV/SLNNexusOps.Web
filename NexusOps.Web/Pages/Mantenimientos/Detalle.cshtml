@@ -1,0 +1,124 @@
+@page "{id:int}"
+@model DetalleModel
+@{
+    var m = Model.Mantenimiento;
+    ViewData["Title"] = $"Mantenimiento {m.Codigo}";
+    ViewData["Migas"] = new List<Miga> { new("Mantenimientos", "/Mantenimientos"), new(m.Codigo) };
+    var acciones = FlujoEstadosUi.Mantenimiento(m.Estado, Model.EsTecnico);
+    var editable = m.Estado == EstadosMantenimiento.Programado || m.Estado == EstadosMantenimiento.EnProceso;
+}
+
+<div class="page-header">
+    <div>
+        <h1><span class="text-mono">@m.Codigo</span> <span class="badge fs-6 @UiHelper.ClaseEstado(m.Estado)">@m.Estado</span></h1>
+        <p class="subtitulo">@m.TipoMantenimiento · @m.ActivoCodigo - @m.ActivoNombre</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @foreach (var destino in acciones)
+        {
+            var texto = destino switch
+            {
+                EstadosMantenimiento.Completado => "Al completar se descontará el stock de los repuestos usados y el activo volverá a estar operativo.",
+                EstadosMantenimiento.Cancelado => "Indique el motivo de la cancelación.",
+                _ => "El activo pasará al estado «En mantenimiento»."
+            };
+            <button type="button" class="btn @FlujoEstadosUi.ClaseBoton(destino)"
+                    data-bs-toggle="modal" data-bs-target="#modalEstado"
+                    data-id="@m.IdMantenimiento" data-estado="@destino"
+                    data-titulo="@FlujoEstadosUi.Accion(destino) mantenimiento" data-texto="@texto"
+                    data-boton="@FlujoEstadosUi.Accion(destino)" data-clase="@FlujoEstadosUi.ClaseBoton(destino)"
+                    data-requiere-comentario="@(FlujoEstadosUi.RequiereComentario(destino) ? "1" : "0")">
+                <i class="bi @FlujoEstadosUi.Icono(destino)"></i> @FlujoEstadosUi.Accion(destino)
+            </button>
+        }
+        @if (editable)
+        {
+            <a asp-page="Form" asp-route-id="@m.IdMantenimiento" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Editar</a>
+        }
+    </div>
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="nx-card">
+            <h5><i class="bi bi-info-circle text-primary"></i> Información</h5>
+            <dl class="nx-ficha">
+                <div><dt>Activo</dt><dd><a asp-page="/Activos/Detalle" asp-route-id="@m.IdActivo"><span class="text-mono">@m.ActivoCodigo</span> - @m.ActivoNombre</a></dd></div>
+                <div><dt>Área</dt><dd>@m.Area</dd></div>
+                <div><dt>Técnico</dt><dd>@m.Tecnico</dd></div>
+                <div><dt>Tipo</dt><dd>@m.TipoMantenimiento</dd></div>
+                <div><dt>Fecha programada</dt><dd>@UiHelper.Fecha(m.FechaProgramada)</dd></div>
+                <div><dt>Inicio</dt><dd>@UiHelper.FechaHora(m.FechaInicio)</dd></div>
+                <div><dt>Fin</dt><dd>@UiHelper.FechaHora(m.FechaFin)</dd></div>
+                <div class="completo"><dt>Descripción</dt><dd style="white-space:pre-line">@m.Descripcion</dd></div>
+                <div class="completo"><dt>Observaciones</dt><dd style="white-space:pre-line">@(string.IsNullOrWhiteSpace(m.Observaciones) ? "-" : m.Observaciones)</dd></div>
+            </dl>
+        </div>
+
+        <div class="nx-card">
+            <h5><i class="bi bi-box-seam text-primary"></i> Repuestos y costos</h5>
+            @if (m.Detalles.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-nx table-sm">
+                        <thead><tr><th>Repuesto</th><th class="text-end">Cantidad</th><th class="text-end">Precio unit.</th><th class="text-end">Subtotal</th></tr></thead>
+                        <tbody>
+                            @foreach (var d in m.Detalles)
+                            {
+                                <tr><td>@d.Repuesto</td><td class="text-end">@d.Cantidad</td><td class="text-end">@UiHelper.Moneda(d.PrecioUnitario)</td><td class="text-end">@UiHelper.Moneda(d.Subtotal)</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No se registraron repuestos.</p>
+            }
+            <div class="d-flex justify-content-end">
+                <table class="table table-sm w-auto mb-0">
+                    <tr><td class="text-muted">Servicio</td><td class="text-end">@UiHelper.Moneda(m.Costo)</td></tr>
+                    <tr><td class="text-muted">Repuestos</td><td class="text-end">@UiHelper.Moneda(m.CostoRepuestos)</td></tr>
+                    <tr class="fw-bold"><td>Total</td><td class="text-end">@UiHelper.Moneda(m.CostoTotal)</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="nx-card">
+            <h5><i class="bi bi-clock-history text-primary"></i> Historial</h5>
+            @if (m.Historial.Count == 0)
+            {
+                <p class="text-muted mb-0">Sin movimientos registrados.</p>
+            }
+            else
+            {
+                <ul class="nx-timeline">
+                    @foreach (var h in m.Historial)
+                    {
+                        <li>
+                            <div>
+                                @if (!string.IsNullOrEmpty(h.EstadoAnterior))
+                                {
+                                    <span class="badge @UiHelper.ClaseEstado(h.EstadoAnterior)">@h.EstadoAnterior</span>
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                }
+                                <span class="badge @UiHelper.ClaseEstado(h.EstadoNuevo)">@h.EstadoNuevo</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(h.Comentario)) { <div class="small mt-1">@h.Comentario</div> }
+                            <div class="fecha">@UiHelper.FechaHora(h.Fecha)@(h.Usuario != null ? " · " + h.Usuario : "")</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@if (acciones.Count > 0)
+{
+    <partial name="_ModalEstado" model="@(new ModalEstadoInfo("Estado", null))" />
+}

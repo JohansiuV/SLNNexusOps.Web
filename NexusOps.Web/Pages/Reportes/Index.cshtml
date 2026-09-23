@@ -1,0 +1,217 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Reportes";
+    ViewData["Migas"] = new List<Miga> { new("Reportes") };
+
+    var tabs = new (string Clave, string Texto, string Icono)[]
+    {
+        ("activos", "Activos", "bi-pc-display"),
+        ("incidencias", "Incidencias", "bi-ticket-perforated"),
+        ("mantenimientos", "Mantenimientos", "bi-tools"),
+        ("costos", "Costos", "bi-cash-coin")
+    };
+
+    var consulta = Request.QueryString.Value ?? string.Empty;
+    var urlCsv = Request.Path + consulta + (consulta.Length == 0 ? "?" : "&") + "handler=Csv"
+                 + (Request.Query.ContainsKey("tipo") ? "" : "&tipo=" + Model.Tipo);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Reportes</h1>
+        <p class="subtitulo">Consulte, filtre, exporte a CSV o imprima la información operativa</p>
+    </div>
+    <div class="d-flex gap-2 no-imprimir">
+        <a href="@urlCsv" class="btn btn-outline-success"><i class="bi bi-filetype-csv"></i> Exportar CSV</a>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    </div>
+</div>
+
+<partial name="_Mensajes" />
+
+<ul class="nav nav-pills mb-3 no-imprimir">
+    @foreach (var t in tabs)
+    {
+        <li class="nav-item"><a class="nav-link @(Model.Tipo == t.Clave ? "active" : "")" asp-page="Index" asp-route-tipo="@t.Clave"><i class="bi @t.Icono"></i> @t.Texto</a></li>
+    }
+</ul>
+
+<div class="nx-card nx-filtros">
+    <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="tipo" value="@Model.Tipo" />
+
+        <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idArea", "Área", Model.IdArea?.ToString(), Model.Areas))</div>
+
+        @if (Model.Tipo == "activos")
+        {
+            <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idTipoActivo", "Tipo de activo", Model.IdTipoActivo?.ToString(), Model.TiposActivo))</div>
+        }
+        @if (Model.Tipo == "incidencias")
+        {
+            <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("prioridad", "Prioridad", Model.Prioridad, Model.Prioridades))</div>
+        }
+        @if (Model.Tipo == "mantenimientos")
+        {
+            <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("tipoMant", "Tipo", Model.TipoMant, Model.TiposMantenimiento))</div>
+            <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idTecnico", "Técnico", Model.IdTecnico?.ToString(), Model.Tecnicos))</div>
+        }
+        @if (Model.Tipo != "costos")
+        {
+            <div class="col-lg-2 col-md-4">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("estado", "Estado", Model.Estado, Model.Estados))</div>
+        }
+
+        <div class="col-lg-2 col-md-4">
+            <label class="form-label">Desde</label>
+            <input type="date" name="desde" value="@UiHelper.FechaInput(Model.Desde)" class="form-control form-control-sm" />
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="form-label">Hasta</label>
+            <input type="date" name="hasta" value="@UiHelper.FechaInput(Model.Hasta)" class="form-control form-control-sm" />
+        </div>
+        <div class="col-lg-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a asp-page="Index" asp-route-tipo="@Model.Tipo" class="btn btn-light btn-sm">Limpiar</a>
+        </div>
+    </form>
+    <div class="form-text mt-2">
+        @switch (Model.Tipo)
+        {
+            case "activos": <text>El rango de fechas se aplica a la fecha de adquisición.</text> break;
+            case "incidencias": <text>El rango de fechas se aplica a la fecha de registro.</text> break;
+            case "mantenimientos": <text>El rango de fechas se aplica a la fecha programada.</text> break;
+            default: <text>El rango de fechas se aplica a la fecha de fin del mantenimiento completado.</text> break;
+        }
+    </div>
+</div>
+
+@if (Model.Tipo == "activos" && Model.Activos != null)
+{
+    <div class="nx-card sin-padding">
+        <div class="p-3 border-bottom"><strong>@Model.Activos.Total</strong> activo(s) · valor total @UiHelper.Moneda(Model.Activos.Items.Sum(a => a.ValorAdquisicion))</div>
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Área</th><th>Marca / Modelo</th><th>Adquisición</th><th class="text-end">Valor</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Activos.Items)
+                    {
+                        <tr>
+                            <td class="text-mono">@a.Codigo</td><td>@a.Nombre</td><td>@a.TipoActivo</td><td>@a.Area</td><td>@a.Marca @a.Modelo</td>
+                            <td>@UiHelper.Fecha(a.FechaAdquisicion)</td><td class="text-end">@UiHelper.Moneda(a.ValorAdquisicion)</td>
+                            <td><span class="badge @UiHelper.ClaseEstado(a.Estado)">@a.Estado</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (Model.Tipo == "incidencias" && Model.Incidencias != null)
+{
+    <div class="nx-card sin-padding">
+        <div class="p-3 border-bottom"><strong>@Model.Incidencias.Total</strong> incidencia(s)</div>
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead><tr><th>Código</th><th>Título</th><th>Activo</th><th>Área</th><th>Prioridad</th><th>Estado</th><th>Asignada a</th><th>Registro</th><th>Resolución</th></tr></thead>
+                <tbody>
+                    @foreach (var i in Model.Incidencias.Items)
+                    {
+                        <tr>
+                            <td class="text-mono">@i.Codigo</td><td>@i.Titulo</td><td class="text-mono">@i.ActivoCodigo</td><td>@i.Area</td>
+                            <td><span class="badge @UiHelper.ClasePrioridad(i.Prioridad)">@UiHelper.Texto(i.Prioridad)</span></td>
+                            <td><span class="badge @UiHelper.ClaseEstado(i.Estado)">@i.Estado</span></td>
+                            <td>@(i.UsuarioAsignado ?? "-")</td><td>@UiHelper.FechaHora(i.FechaRegistro)</td><td>@UiHelper.FechaHora(i.FechaResolucion)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (Model.Tipo == "mantenimientos" && Model.Mantenimientos != null)
+{
+    <div class="nx-card sin-padding">
+        <div class="p-3 border-bottom"><strong>@Model.Mantenimientos.Total</strong> mantenimiento(s) · costo total @UiHelper.Moneda(Model.Mantenimientos.Items.Sum(m => m.CostoTotal))</div>
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead><tr><th>Código</th><th>Activo</th><th>Área</th><th>Tipo</th><th>Técnico</th><th>Programado</th><th>Estado</th><th class="text-end">Servicio</th><th class="text-end">Repuestos</th><th class="text-end">Total</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.Mantenimientos.Items)
+                    {
+                        <tr>
+                            <td class="text-mono">@m.Codigo</td><td class="text-mono">@m.ActivoCodigo</td><td>@m.Area</td><td>@m.TipoMantenimiento</td><td>@m.Tecnico</td>
+                            <td>@UiHelper.Fecha(m.FechaProgramada)</td>
+                            <td><span class="badge @UiHelper.ClaseEstado(m.Estado)">@m.Estado</span></td>
+                            <td class="text-end">@UiHelper.Moneda(m.Costo)</td><td class="text-end">@UiHelper.Moneda(m.CostoRepuestos)</td><td class="text-end fw-semibold">@UiHelper.Moneda(m.CostoTotal)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (Model.Tipo == "costos" && Model.Costos != null)
+{
+    var c = Model.Costos;
+    var maxArea = c.PorArea.Count > 0 ? c.PorArea.Max(x => x.CostoTotal) : 0;
+    var maxActivo = c.PorActivo.Count > 0 ? c.PorActivo.Max(x => x.CostoTotal) : 0;
+
+    <div class="row g-3 mb-3 nx-resumen-costos">
+        <div class="col-md-3"><div class="kpi violeta"><span class="kpi-icono"><i class="bi bi-cash-coin"></i></span><span><span class="kpi-valor">@UiHelper.Moneda(c.CostoTotal)</span><br /><span class="kpi-titulo">Costo total</span></span></div></div>
+        <div class="col-md-3"><div class="kpi azul"><span class="kpi-icono"><i class="bi bi-person-gear"></i></span><span><span class="kpi-valor">@UiHelper.Moneda(c.CostoServicioTotal)</span><br /><span class="kpi-titulo">Servicio</span></span></div></div>
+        <div class="col-md-3"><div class="kpi cyan"><span class="kpi-icono"><i class="bi bi-box-seam"></i></span><span><span class="kpi-valor">@UiHelper.Moneda(c.CostoRepuestosTotal)</span><br /><span class="kpi-titulo">Repuestos</span></span></div></div>
+        <div class="col-md-3"><div class="kpi verde"><span class="kpi-icono"><i class="bi bi-tools"></i></span><span><span class="kpi-valor">@c.TotalMantenimientos</span><br /><span class="kpi-titulo">Mantenimientos completados</span></span></div></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="nx-card sin-padding">
+                <div class="p-3 border-bottom fw-semibold">Costo por área</div>
+                <table class="table table-nx table-sm mb-0">
+                    <thead><tr><th>Área</th><th class="text-center">Mant.</th><th class="text-end">Total</th><th style="width:30%"></th></tr></thead>
+                    <tbody>
+                        @foreach (var x in c.PorArea)
+                        {
+                            <tr><td>@x.Etiqueta</td><td class="text-center">@x.Cantidad</td><td class="text-end">@UiHelper.Moneda(x.CostoTotal)</td>
+                                <td><div class="nx-barra"><span style="width:@((maxArea > 0 ? (int)(x.CostoTotal / maxArea * 100) : 0))%"></span></div></td></tr>
+                        }
+                        @if (c.PorArea.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-4">Sin datos</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="nx-card sin-padding">
+                <div class="p-3 border-bottom fw-semibold">Costo mensual y acumulado</div>
+                <table class="table table-nx table-sm mb-0">
+                    <thead><tr><th>Mes</th><th class="text-center">Mant.</th><th class="text-end">Costo</th><th class="text-end">Acumulado</th></tr></thead>
+                    <tbody>
+                        @foreach (var x in c.PorMes)
+                        {
+                            <tr><td>@x.Etiqueta</td><td class="text-center">@x.Cantidad</td><td class="text-end">@UiHelper.Moneda(x.Costo)</td><td class="text-end fw-semibold">@UiHelper.Moneda(x.Acumulado)</td></tr>
+                        }
+                        @if (c.PorMes.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-4">Sin datos</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="nx-card sin-padding">
+                <div class="p-3 border-bottom fw-semibold">Costo por activo</div>
+                <div class="table-responsive">
+                    <table class="table table-nx table-sm mb-0">
+                        <thead><tr><th>Activo</th><th class="text-center">Mant.</th><th class="text-end">Servicio</th><th class="text-end">Repuestos</th><th class="text-end">Total</th><th style="width:25%"></th></tr></thead>
+                        <tbody>
+                            @foreach (var x in c.PorActivo)
+                            {
+                                <tr><td>@x.Etiqueta</td><td class="text-center">@x.Cantidad</td><td class="text-end">@UiHelper.Moneda(x.CostoServicio)</td><td class="text-end">@UiHelper.Moneda(x.CostoRepuestos)</td><td class="text-end fw-semibold">@UiHelper.Moneda(x.CostoTotal)</td>
+                                    <td><div class="nx-barra"><span style="width:@((maxActivo > 0 ? (int)(x.CostoTotal / maxActivo * 100) : 0))%"></span></div></td></tr>
+                            }
+                            @if (c.PorActivo.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">Sin datos</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}

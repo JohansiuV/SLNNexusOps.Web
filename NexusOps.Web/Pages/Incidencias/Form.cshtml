@@ -1,0 +1,73 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? "Editar incidencia" : "Registrar incidencia";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Incidencias", "/Incidencias"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="Input.IdActivo" class="form-label">Activo afectado</label>
+                @if (Model.EsEdicion)
+                {
+                    <input class="form-control" value="@Model.ActivoTexto" disabled />
+                    <input type="hidden" asp-for="Input.IdActivo" />
+                }
+                else
+                {
+                    <select asp-for="Input.IdActivo" asp-items="Model.Activos" class="form-select"><option value="0">-- Seleccione el activo --</option></select>
+                    <span asp-validation-for="Input.IdActivo" class="text-danger"></span>
+                }
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Titulo" class="form-label">Título</label>
+                <input asp-for="Input.Titulo" class="form-control" placeholder="Resumen breve del problema" />
+                <span asp-validation-for="Input.Titulo" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Descripcion" class="form-label">Descripción</label>
+                <textarea asp-for="Input.Descripcion" class="form-control" rows="4" placeholder="Describa qué ocurre, desde cuándo y qué impacto tiene"></textarea>
+                <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Prioridad" class="form-label">Prioridad</label>
+                <select asp-for="Input.Prioridad" asp-items="Model.Prioridades" class="form-select"></select>
+                <span asp-validation-for="Input.Prioridad" class="text-danger"></span>
+                <div class="form-text">Una incidencia <strong>Crítica</strong> genera una alerta inmediata.</div>
+            </div>
+            @if (Model.EsAdminOSupervisor)
+            {
+                <div class="col-md-6">
+                    <label asp-for="Input.IdUsuarioAsignado" class="form-label">Responsable</label>
+                    <select asp-for="Input.IdUsuarioAsignado" asp-items="Model.Usuarios" class="form-select"><option value="">Sin asignar</option></select>
+                </div>
+            }
+            @if (Model.EsEdicion)
+            {
+                <div class="col-12">
+                    <label asp-for="Input.Observaciones" class="form-label">Observaciones</label>
+                    <textarea asp-for="Input.Observaciones" class="form-control" rows="2"></textarea>
+                    <span asp-validation-for="Input.Observaciones" class="text-danger"></span>
+                </div>
+            }
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="@(Model.EsEdicion ? "Detalle" : "Index")" asp-route-id="@Model.Id" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios de la incidencia?" : "¿Desea registrar esta incidencia?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Registrar")">
+                <i class="bi bi-save"></i> @(Model.EsEdicion ? "Guardar cambios" : "Registrar incidencia")
+            </button>
+        </div>
+    </form>
+</div>

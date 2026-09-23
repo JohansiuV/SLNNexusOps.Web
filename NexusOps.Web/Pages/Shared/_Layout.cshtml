@@ -1,0 +1,139 @@
+@{
+    var pagina = ViewContext.RouteData.Values["page"]?.ToString() ?? string.Empty;
+    var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+    var nombre = User.FindFirst(AuthService.ClaimNombreCompleto)?.Value ?? User.Identity?.Name ?? string.Empty;
+    var esAdmin = rol == RolesSistema.Administrador;
+    var esAdminSup = esAdmin || rol == RolesSistema.Supervisor;
+    var migas = ViewData["Migas"] as IEnumerable<Miga>;
+
+    string Act(string prefijo) => pagina.StartsWith(prefijo, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NEXUS OPS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="nx-shell">
+        <aside class="nx-sidebar" id="nxSidebar">
+            <a class="nx-brand" asp-page="/Index">
+                <span class="nx-logo"><i class="bi bi-hexagon-fill"></i></span>
+                <span><strong>NEXUS OPS</strong><small>Gestión operativa</small></span>
+            </a>
+
+            <nav class="nx-nav">
+                @if (esAdminSup)
+                {
+                    <a class="nx-link @Act("/Dashboard")" asp-page="/Dashboard/Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                }
+
+                <div class="nx-nav-title">Operación</div>
+                <a class="nx-link @Act("/Activos")" asp-page="/Activos/Index"><i class="bi bi-pc-display"></i> Activos</a>
+                <a class="nx-link @Act("/Incidencias")" asp-page="/Incidencias/Index"><i class="bi bi-ticket-perforated"></i> Incidencias</a>
+                <a class="nx-link @Act("/Tareas")" asp-page="/Tareas/Index"><i class="bi bi-check2-square"></i> Tareas</a>
+                <a class="nx-link @Act("/Mantenimientos")" asp-page="/Mantenimientos/Index"><i class="bi bi-tools"></i> Mantenimientos</a>
+                @if (esAdminSup)
+                {
+                    <a class="nx-link @Act("/Repuestos")" asp-page="/Repuestos/Index"><i class="bi bi-box-seam"></i> Repuestos</a>
+                }
+                <a class="nx-link @Act("/Alertas")" asp-page="/Alertas/Index"><i class="bi bi-bell"></i> Alertas</a>
+
+                @if (esAdminSup)
+                {
+                    <div class="nx-nav-title">Análisis</div>
+                    <a class="nx-link @Act("/Reportes")" asp-page="/Reportes/Index"><i class="bi bi-bar-chart-line"></i> Reportes</a>
+                }
+
+                @if (esAdmin)
+                {
+                    <div class="nx-nav-title">Administración</div>
+                    <a class="nx-link @Act("/Usuarios")" asp-page="/Usuarios/Index"><i class="bi bi-people"></i> Usuarios</a>
+                    <a class="nx-link @Act("/Roles")" asp-page="/Roles/Index"><i class="bi bi-shield-lock"></i> Roles</a>
+                    <a class="nx-link @Act("/Areas")" asp-page="/Areas/Index"><i class="bi bi-diagram-3"></i> Áreas</a>
+                    <a class="nx-link @Act("/Personal")" asp-page="/Personal/Index"><i class="bi bi-person-badge"></i> Personal</a>
+                    <a class="nx-link @Act("/TiposActivo")" asp-page="/TiposActivo/Index"><i class="bi bi-tags"></i> Tipos de activo</a>
+                }
+            </nav>
+
+            <div class="nx-sidebar-footer">NEXUS OPS &copy; @DateTime.Now.Year</div>
+        </aside>
+
+        <div class="nx-overlay" id="nxOverlay"></div>
+
+        <div class="nx-main">
+            <header class="nx-header">
+                <button type="button" class="btn nx-icon-btn d-lg-none" id="btnMenu" aria-label="Menú"><i class="bi bi-list fs-4"></i></button>
+
+                <nav aria-label="breadcrumb" class="nx-migas">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a asp-page="/Index"><i class="bi bi-house-door"></i> Inicio</a></li>
+                        @if (migas != null)
+                        {
+                            foreach (var miga in migas)
+                            {
+                                if (!string.IsNullOrEmpty(miga.Url))
+                                {
+                                    <li class="breadcrumb-item"><a href="@miga.Url">@miga.Texto</a></li>
+                                }
+                                else
+                                {
+                                    <li class="breadcrumb-item active" aria-current="page">@miga.Texto</li>
+                                }
+                            }
+                        }
+                    </ol>
+                </nav>
+
+                <div class="nx-header-right">
+                    <a asp-page="/Alertas/Index" class="nx-bell" title="Alertas">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span id="alertBadge" class="nx-badge d-none">0</span>
+                    </a>
+                    <div class="nx-user">
+                        <span class="nx-avatar">@UiHelper.Iniciales(nombre)</span>
+                        <span class="nx-user-data"><strong>@nombre</strong><small>@rol</small></span>
+                    </div>
+                    <form method="post" asp-page="/Logout" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-right"></i> Salir</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="nx-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    @* Modal genérico de confirmación (botones con data-confirm) *@
+    <div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfirmarTitulo">Confirmar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modalConfirmarTexto"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="modalConfirmarOk">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/alertas.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

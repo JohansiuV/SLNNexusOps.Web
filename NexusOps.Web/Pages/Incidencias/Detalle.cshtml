@@ -1,0 +1,99 @@
+@page "{id:int}"
+@model DetalleModel
+@{
+    var i = Model.Incidencia;
+    ViewData["Title"] = $"Incidencia {i.Codigo}";
+    ViewData["Migas"] = new List<Miga> { new("Incidencias", "/Incidencias"), new(i.Codigo) };
+    var acciones = FlujoEstadosUi.Incidencia(i.Estado, Model.EsTecnico);
+    var editable = Model.EsAdminOSupervisor && i.Estado != EstadosIncidencia.Cerrada && i.Estado != EstadosIncidencia.Cancelada;
+}
+
+<div class="page-header">
+    <div>
+        <h1><span class="text-mono">@i.Codigo</span>
+            <span class="badge fs-6 @UiHelper.ClasePrioridad(i.Prioridad)">@UiHelper.Texto(i.Prioridad)</span>
+            <span class="badge fs-6 @UiHelper.ClaseEstado(i.Estado)">@i.Estado</span></h1>
+        <p class="subtitulo">@i.Titulo</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @foreach (var destino in acciones)
+        {
+            var texto = destino switch
+            {
+                EstadosIncidencia.Asignada => "Seleccione el responsable de la incidencia.",
+                EstadosIncidencia.Cancelada => "Indique el motivo de la cancelación.",
+                EstadosIncidencia.Resuelta => "Puede agregar un comentario sobre la solución aplicada.",
+                _ => ""
+            };
+            <button type="button" class="btn @FlujoEstadosUi.ClaseBoton(destino)"
+                    data-bs-toggle="modal" data-bs-target="#modalEstado"
+                    data-id="@i.IdIncidencia" data-estado="@destino"
+                    data-titulo="@FlujoEstadosUi.Accion(destino) incidencia" data-texto="@texto"
+                    data-boton="@FlujoEstadosUi.Accion(destino)" data-clase="@FlujoEstadosUi.ClaseBoton(destino)"
+                    data-requiere-comentario="@(FlujoEstadosUi.RequiereComentario(destino) ? "1" : "0")"
+                    data-asignar="@(destino == EstadosIncidencia.Asignada ? "1" : "0")" data-asignar-obligatorio="1"
+                    data-usuario="@i.IdUsuarioAsignado">
+                <i class="bi @FlujoEstadosUi.Icono(destino)"></i> @FlujoEstadosUi.Accion(destino)
+            </button>
+        }
+        @if (editable)
+        {
+            <a asp-page="Form" asp-route-id="@i.IdIncidencia" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Editar / reasignar</a>
+        }
+    </div>
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="nx-card h-100">
+            <h5><i class="bi bi-info-circle text-primary"></i> Información</h5>
+            <dl class="nx-ficha">
+                <div><dt>Activo</dt><dd><a asp-page="/Activos/Detalle" asp-route-id="@i.IdActivo"><span class="text-mono">@i.ActivoCodigo</span> - @i.ActivoNombre</a></dd></div>
+                <div><dt>Área</dt><dd>@i.Area</dd></div>
+                <div><dt>Reportada por</dt><dd>@i.UsuarioReporta</dd></div>
+                <div><dt>Asignada a</dt><dd>@(i.UsuarioAsignado ?? "Sin asignar")</dd></div>
+                <div><dt>Registro</dt><dd>@UiHelper.FechaHora(i.FechaRegistro)</dd></div>
+                <div><dt>Asignación</dt><dd>@UiHelper.FechaHora(i.FechaAsignacion)</dd></div>
+                <div><dt>Resolución</dt><dd>@UiHelper.FechaHora(i.FechaResolucion)</dd></div>
+                <div class="completo"><dt>Descripción</dt><dd style="white-space:pre-line">@i.Descripcion</dd></div>
+                <div class="completo"><dt>Observaciones</dt><dd style="white-space:pre-line">@(string.IsNullOrWhiteSpace(i.Observaciones) ? "-" : i.Observaciones)</dd></div>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="nx-card h-100">
+            <h5><i class="bi bi-clock-history text-primary"></i> Historial de estados</h5>
+            @if (i.Historial.Count == 0)
+            {
+                <p class="text-muted mb-0">Sin movimientos registrados.</p>
+            }
+            else
+            {
+                <ul class="nx-timeline">
+                    @foreach (var h in i.Historial)
+                    {
+                        <li>
+                            <div>
+                                @if (!string.IsNullOrEmpty(h.EstadoAnterior))
+                                {
+                                    <span class="badge @UiHelper.ClaseEstado(h.EstadoAnterior)">@h.EstadoAnterior</span>
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                }
+                                <span class="badge @UiHelper.ClaseEstado(h.EstadoNuevo)">@h.EstadoNuevo</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(h.Comentario)) { <div class="small mt-1">@h.Comentario</div> }
+                            <div class="fecha">@UiHelper.FechaHora(h.Fecha)@(h.Usuario != null ? " · " + h.Usuario : "")</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@if (acciones.Count > 0)
+{
+    <partial name="_ModalEstado" model="@(new ModalEstadoInfo("Estado", Model.EsAdminOSupervisor ? Model.Usuarios : null))" />
+}

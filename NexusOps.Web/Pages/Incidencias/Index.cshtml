@@ -1,0 +1,71 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Incidencias";
+    ViewData["Migas"] = new List<Miga> { new("Incidencias") };
+}
+
+<div class="page-header">
+    <div>
+        <h1>Incidencias</h1>
+        <p class="subtitulo">@(Model.EsTecnico ? "Incidencias asignadas a usted o reportadas por usted" : "Problemas operativos registrados sobre los activos")</p>
+    </div>
+    <a asp-page="Form" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva incidencia</a>
+</div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-filtros">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">Buscar</label>
+            <input type="search" name="buscar" value="@Model.Buscar" class="form-control form-control-sm" placeholder="Código, título o activo..." />
+        </div>
+        <div class="col-lg-2 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("prioridad", "Prioridad", Model.Prioridad, Model.Prioridades))</div>
+        <div class="col-lg-2 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("estado", "Estado", Model.Estado, Model.Estados))</div>
+        <div class="col-lg-2 col-md-6">@await Html.PartialAsync("_FiltroSelect", new FiltroSelectInfo("idArea", "Área", Model.IdArea?.ToString(), Model.Areas))</div>
+        <div class="col-lg-3 d-flex align-items-center gap-3">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="soloAbiertas" value="true" id="chkAbiertas" @(Model.SoloAbiertas ? "checked" : null) />
+                <label class="form-check-label small" for="chkAbiertas">Solo abiertas</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+            <a asp-page="Index" class="btn btn-light btn-sm">Limpiar</a>
+        </div>
+    </form>
+</div>
+
+<div class="nx-card sin-padding">
+    @if (Model.Resultado.Items.Count == 0)
+    {
+        <div class="nx-vacio"><i class="bi bi-ticket-perforated"></i><p class="mt-2 mb-0">No se encontraron incidencias.</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-nx">
+                <thead>
+                    <tr><th>Código</th><th>Título</th><th>Activo</th><th>Prioridad</th><th>Estado</th><th>Asignado a</th><th>Registro</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var i in Model.Resultado.Items)
+                    {
+                        <tr class="@(i.Prioridad == Prioridades.Critica && EstadosIncidencia.Abiertos.Contains(i.Estado) ? "fila-alerta" : "")">
+                            <td><a asp-page="Detalle" asp-route-id="@i.IdIncidencia" class="fw-semibold text-mono">@i.Codigo</a></td>
+                            <td>@i.Titulo</td>
+                            <td><span class="text-mono">@i.ActivoCodigo</span><br /><small class="text-muted">@i.Area</small></td>
+                            <td><span class="badge @UiHelper.ClasePrioridad(i.Prioridad)">@UiHelper.Texto(i.Prioridad)</span></td>
+                            <td><span class="badge @UiHelper.ClaseEstado(i.Estado)">@i.Estado</span></td>
+                            <td>@(i.UsuarioAsignado ?? "Sin asignar")</td>
+                            <td>@UiHelper.FechaHora(i.FechaRegistro)</td>
+                            <td class="acciones">
+                                <a asp-page="Detalle" asp-route-id="@i.IdIncidencia" class="btn btn-sm btn-outline-primary" title="Ver detalle"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_Paginacion", new PaginacionInfo(Model.Resultado.Pagina, Model.Resultado.TotalPaginas, Model.Resultado.Total, Model.Resultado.Tamano))
+    }
+</div>

@@ -1,0 +1,22 @@
+@* Mensajes de operación: éxito (TempData) y error (TempData o de la respuesta actual). *@
+@if (TempData["Exito"] is string exito && !string.IsNullOrEmpty(exito))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert" data-autodismiss="5000">
+        <i class="bi bi-check-circle-fill me-1"></i> @exito
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+@if (TempData["Error"] is string errorTemp && !string.IsNullOrEmpty(errorTemp))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> @errorTemp
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+@if (ViewData["Error"] is string errorActual && !string.IsNullOrEmpty(errorActual))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> @errorActual
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}

@@ -1,0 +1,136 @@
+@page "{id:int?}"
+@model FormModel
+@{
+    var titulo = Model.EsEdicion ? $"Editar mantenimiento {Model.Codigo}" : "Programar mantenimiento";
+    ViewData["Title"] = titulo;
+    ViewData["Migas"] = new List<Miga> { new("Mantenimientos", "/Mantenimientos"), new(titulo) };
+}
+
+<div class="page-header"><h1>@titulo</h1></div>
+
+<partial name="_Mensajes" />
+
+<div class="nx-card nx-form">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            @if (Model.SoloTecnico)
+            {
+                @* El técnico solo modifica costo, observaciones y repuestos: el resto se conserva. *@
+                <input type="hidden" asp-for="Input.IdActivo" />
+                <input type="hidden" asp-for="Input.IdTecnico" />
+                <input type="hidden" asp-for="Input.TipoMantenimiento" />
+                <input type="hidden" name="Input.FechaProgramada" value="@UiHelper.FechaInput(Model.Input.FechaProgramada)" />
+                <input type="hidden" asp-for="Input.Descripcion" />
+
+                <div class="col-12">
+                    <dl class="nx-ficha">
+                        <div><dt>Activo</dt><dd>@Model.ActivoTexto</dd></div>
+                        <div><dt>Tipo</dt><dd>@Model.Input.TipoMantenimiento</dd></div>
+                        <div><dt>Programado</dt><dd>@UiHelper.Fecha(Model.Input.FechaProgramada)</dd></div>
+                        <div><dt>Estado</dt><dd><span class="badge @UiHelper.ClaseEstado(Model.Estado)">@Model.Estado</span></dd></div>
+                        <div class="completo"><dt>Descripción</dt><dd>@Model.Input.Descripcion</dd></div>
+                    </dl>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-8">
+                    <label asp-for="Input.IdActivo" class="form-label">Activo</label>
+                    <select asp-for="Input.IdActivo" asp-items="Model.Activos" class="form-select"><option value="0">-- Seleccione el activo --</option></select>
+                    <span asp-validation-for="Input.IdActivo" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.TipoMantenimiento" class="form-label">Tipo</label>
+                    <select asp-for="Input.TipoMantenimiento" asp-items="Model.Tipos" class="form-select"></select>
+                    <span asp-validation-for="Input.TipoMantenimiento" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.IdTecnico" class="form-label">Técnico responsable</label>
+                    <select asp-for="Input.IdTecnico" asp-items="Model.Tecnicos" class="form-select"><option value="0">-- Seleccione --</option></select>
+                    <span asp-validation-for="Input.IdTecnico" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.FechaProgramada" class="form-label">Fecha programada</label>
+                    <input asp-for="Input.FechaProgramada" class="form-control" />
+                    <span asp-validation-for="Input.FechaProgramada" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Input.Descripcion" class="form-label">Descripción del trabajo</label>
+                    <textarea asp-for="Input.Descripcion" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+                </div>
+            }
+
+            <div class="col-md-6">
+                <label asp-for="Input.Costo" class="form-label">Costo del servicio / mano de obra (S/)</label>
+                <input asp-for="Input.Costo" type="number" step="0.01" min="0" class="form-control" />
+                <span asp-validation-for="Input.Costo" class="text-danger"></span>
+                <div class="form-text">El costo de los repuestos se suma automáticamente.</div>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Observaciones" class="form-label">Observaciones</label>
+                <textarea asp-for="Input.Observaciones" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Input.Observaciones" class="text-danger"></span>
+            </div>
+
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Repuestos</label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarRepuesto"><i class="bi bi-plus-lg"></i> Agregar repuesto</button>
+                </div>
+                <div class="table-responsive border rounded">
+                    <table class="table table-sm tabla-lineas mb-0" id="tablaRepuestos">
+                        <thead class="table-light"><tr><th>Repuesto</th><th style="width:130px">Cantidad</th><th style="width:60px"></th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Input.Detalles.Count; i++)
+                            {
+                                <tr class="linea">
+                                    <td>
+                                        <select data-campo="IdRepuesto" name="Input.Detalles[@i].IdRepuesto" class="form-select form-select-sm">
+                                            <option value="0">-- Seleccione --</option>
+                                            @foreach (var rep in Model.Repuestos)
+                                            {
+                                                <option value="@rep.Value" selected="@(rep.Value == Model.Input.Detalles[i].IdRepuesto.ToString())">@rep.Text</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td><input data-campo="Cantidad" name="Input.Detalles[@i].Cantidad" type="number" min="1" value="@Model.Input.Detalles[i].Cantidad" class="form-control form-control-sm" /></td>
+                                    <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-trash"></i></button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div id="sinRepuestos" class="text-muted small p-3 @(Model.Input.Detalles.Count > 0 ? "d-none" : "")">No se han agregado repuestos.</div>
+                </div>
+                <div class="form-text">El stock se descuenta cuando el mantenimiento se completa.</div>
+
+                <template id="plantillaRepuesto">
+                    <tr class="linea">
+                        <td>
+                            <select data-campo="IdRepuesto" class="form-select form-select-sm">
+                                <option value="0">-- Seleccione --</option>
+                                @foreach (var rep in Model.Repuestos)
+                                {
+                                    <option value="@rep.Value">@rep.Text</option>
+                                }
+                            </select>
+                        </td>
+                        <td><input data-campo="Cantidad" type="number" min="1" value="1" class="form-control form-control-sm" /></td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-trash"></i></button></td>
+                    </tr>
+                </template>
+            </div>
+        </div>
+
+        <div class="nx-form-acciones mt-4">
+            <a asp-page="@(Model.EsEdicion ? "Detalle" : "Index")" asp-route-id="@Model.Id" class="btn btn-light">Cancelar</a>
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="@(Model.EsEdicion ? "¿Desea guardar los cambios del mantenimiento?" : "¿Desea programar este mantenimiento?")"
+                    data-confirm-ok="@(Model.EsEdicion ? "Guardar" : "Programar")">
+                <i class="bi bi-save"></i> Guardar
+            </button>
+        </div>
+    </form>
+</div>

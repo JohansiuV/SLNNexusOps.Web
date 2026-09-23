@@ -1,0 +1,10 @@
+/* Dashboard */
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px; }
+
+.chart-card { height: 100%; }
+.chart-card .chart-caja { position: relative; height: 280px; }
+.chart-card .chart-caja.alta { height: 320px; }
+
+.dash-vacio { color: var(--nx-muted); text-align: center; padding: 30px 10px; }
+
+.dash-actualizado { font-size: .78rem; color: var(--nx-muted); }
